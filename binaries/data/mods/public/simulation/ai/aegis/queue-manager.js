@@ -34,9 +34,12 @@ var QueueManager = function(queues, priorities) {
 	this.queueArrays.sort(function (a,b) { return (self.priorities[b[0]] - self.priorities[a[0]]) });
 
 	this.curItemQueue = [];
+	this.turn = 0;
+	// debug("QueueManager()");
 };
 
 QueueManager.prototype.getAvailableResources = function(gameState, noAccounts) {
+	// debug("QueueManager.getAvailableResources()");
 	var resources = gameState.getResources();
 	if (noAccounts)
 		return resources;
@@ -47,6 +50,7 @@ QueueManager.prototype.getAvailableResources = function(gameState, noAccounts) {
 };
 
 QueueManager.prototype.getTotalAccountedResources = function(gameState) {
+	// debug("QueueManager.getTotalAccountedResources()");
 	var resources = new Resources();
 	for (var key in this.queues) {
 		resources.add(this.accounts[key]);
@@ -55,6 +59,7 @@ QueueManager.prototype.getTotalAccountedResources = function(gameState) {
 };
 
 QueueManager.prototype.currentNeeds = function(gameState) {
+	// debug("QueueManager.currentNeeds()");
 	var needs = new Resources();
 	// get out current resources, not removing accounts.
 	var current = this.getAvailableResources(gameState, true);
@@ -83,6 +88,7 @@ QueueManager.prototype.currentNeeds = function(gameState) {
 };
 
 QueueManager.prototype.futureNeeds = function(gameState) {
+	// debug("QueueManager.futureNeeds()");
 	var needs = new Resources();
 	// get out current resources, not removing accounts.
 	var current = this.getAvailableResources(gameState, true);
@@ -109,6 +115,7 @@ QueueManager.prototype.futureNeeds = function(gameState) {
 
 // calculate the gather rates we'd want to be able to use all elements in our queues
 QueueManager.prototype.wantedGatherRates = function(gameState) {
+	// debug("QueueManager.wantedGatherRates()");
 	var rates = { "food" : 0, "wood" : 0, "stone" : 0, "metal" : 0 };
 	var qTime = gameState.getTimeElapsed();
 	var qCosts = { "food" : 0, "wood" : 0, "stone" : 0, "metal" : 0 };
@@ -272,7 +279,7 @@ QueueManager.prototype.printQueues = function(gameState){
 	debug ("Accounts");
 	for (var p in this.accounts)
 	{
-		debug(p + ": " + uneval(this.accounts[p]));
+		debug(p + " :: " + this.priorities[p] + " -> " + uneval(this.accounts[p]));
 	}
 	debug("Needed Resources:" + uneval(this.futureNeeds(gameState,false)));
 	debug ("Wanted Gather Rates:" + uneval(this.wantedGatherRates(gameState)));
@@ -332,7 +339,20 @@ QueueManager.prototype.clear = function(){
 };
 
 QueueManager.prototype.update = function(gameState) {
+	// debug("QueueManager.update()");
 	var self = this;
+	++this.turn;
+	if (this.turn % 10 == 0) {
+		this.printQueues(gameState);
+	}
+
+	// var lQueues = []
+	// for (queue in this.queues) {
+	// 	if (this.queues[queue].length() > 0) {
+	// 		lQueues.push(queue);
+	// 	}
+	// }
+	// lQueues.sort(function(a, b) {return self.priorities[a] < self.priorities[b];});
 	
 	for (var i in this.priorities){
 		if (!(this.priorities[i] > 0)){
@@ -340,14 +360,18 @@ QueueManager.prototype.update = function(gameState) {
 			warn("QueueManager received bad priorities, please report this error: " + uneval(this.priorities));
 		}
 	}
+
+	this.queueArrays.sort(function (a,b) { return (self.priorities[b[0]] - self.priorities[a[0]]) });
 	
 	Engine.ProfileStart("Queue Manager");
-			
+	
 	// Let's assign resources to plans that need'em
 	var availableRes = this.getAvailableResources(gameState);
-	for (var ress in availableRes)
+
+	for (var i in availableRes.types)
 	{
-		if (availableRes[ress] > 0 && ress != "population")
+		var ress = availableRes.types[i];
+		if (availableRes[ress] > 0)
 		{
 			var totalPriority = 0;
 			var tempPrio = {};
@@ -398,51 +422,9 @@ QueueManager.prototype.update = function(gameState) {
 				var maxAdd = Math.floor(Math.min(maxNeed[j], toAdd));
 				this.accounts[j][ress] += maxAdd;
 			}
-		}/* else if (ress != "population" && gameState.ai.playedTurn % 5 === 0) {
-			// okay here we haev no resource available. We'll try to shift resources to complete plans if possible.
-			// So basically if 2 queues have resources, and one is higher priority, and it needs resources
-			// We'll shift from the lower priority to the higher if we can complete it.
-			var queues = [];
-			for (var j in this.queues) {
-				if (this.queues[j].length() && this.queues[j].getNext().isGo(gameState) && this.accounts[j][ress] > 0)
-					queues.push(j);
-			}
-			if (queues.length > 1)
-			{
-				// we'll work from the bottom to the top. ie lowest priority will try to give to highest priority.
-				queues.sort(function (a,b) { return (self.priorities[a] < self.priorities[b]); });
-				var under = 0, over = queues.length - 1;
-				while (under !== over)
-				{
-					var cost = this.queues[queues[over]].getNext().getCost()[ress];
-					var totalCost = this.queues[queues[over]].maxAccountWanted(gameState)[ress];
-					if (this.accounts[queues[over]] >= cost)
-					{
-						--over; // check the next one.
-						continue;
-					}
-					// need some discrepancy in priorities
-					if (this.priorities[queues[under]] < this.priorities[queues[over]] - 20)
-					{
-						if (this.accounts[queues[under]] + this.accounts[queues[over]] >= cost)
-						{
-							var amnt = cost - this.accounts[queues[over]];
-							this.accounts[queues[under]] -= amnt;
-							this.accounts[queues[over]] += amnt;
-							--over;
-							debug ("Shifting " + amnt + " from " + queues[under] + " to " +queues[over]);
-							continue;
-						} else {
-							++under;
-							continue;
-						}
-					} else {
-						break;
-					}
-				}
-				// okaaaay.
-			}
-		}*/
+		} else {
+			// warn("Resource not available : " + ress);
+		}
 	}
 	
 	Engine.ProfileStart("Pick items from queues");
@@ -482,6 +464,7 @@ QueueManager.prototype.update = function(gameState) {
 };
 
 QueueManager.prototype.pauseQueue = function(queue, scrapAccounts) {
+	// debug("QueueManager.pauseQueue()");
 	if (this.queues[queue])
 	{
 		this.queues[queue].paused = true;
@@ -491,11 +474,13 @@ QueueManager.prototype.pauseQueue = function(queue, scrapAccounts) {
 }
 
 QueueManager.prototype.unpauseQueue = function(queue) {
+	// debug("QueueManager.unpauseQueue()");
 	if (this.queues[queue])
 		this.queues[queue].paused = false;
 }
 
 QueueManager.prototype.pauseAll = function(scrapAccounts, but) {
+	// debug("QueueManager.pauseAll()");
 	for (var p in this.queues)
 		if (p != but)
 		{
@@ -506,6 +491,7 @@ QueueManager.prototype.pauseAll = function(scrapAccounts, but) {
 }
 
 QueueManager.prototype.unpauseAll = function(but) {
+	// debug("QueueManager.unpauseAll()");
 	for (var p in this.queues)
 		if (p != but)
 			this.queues[p].paused = false;
@@ -513,6 +499,8 @@ QueueManager.prototype.unpauseAll = function(but) {
 
 
 QueueManager.prototype.addQueue = function(queueName, priority) {
+	// debug("QueueManager.addQueue()");
+	debug("Adding new Queue -> " + "Name: " + queueName + "; Priority: " + priority);
 	if (this.queues[queueName] == undefined) {
 		this.queues[queueName] = new Queue();
 		this.priorities[queueName] = priority;
@@ -527,6 +515,8 @@ QueueManager.prototype.addQueue = function(queueName, priority) {
 	}
 }
 QueueManager.prototype.removeQueue = function(queueName) {
+	// debug("QueueManager.removeQueue()");
+	debug("Removing Queue -> " + "Name: " + queueName);
 	if (this.queues[queueName] !== undefined) {
 		if ( this.curItemQueue.indexOf(queueName) !== -1) {
 			this.curItemQueue.splice(this.curItemQueue.indexOf(queueName),1);
@@ -544,6 +534,8 @@ QueueManager.prototype.removeQueue = function(queueName) {
 	}
 }
 QueueManager.prototype.changePriority = function(queueName, newPriority) {
+	// debug("QueueManager.changePriority()");
+	debug("Priority Change of Queue -> " + "Name: " + queueName + "; Priority: " + priority);
 	var self = this;
 	if (this.queues[queueName] !== undefined)
 		this.priorities[queueName] = newPriority;

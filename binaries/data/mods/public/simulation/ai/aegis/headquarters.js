@@ -40,10 +40,12 @@ var HQ = function() {
 	this.TotalAttackNumber = 0;
 	this.upcomingAttacks = { "CityAttack" : [] };
 	this.startedAttacks = { "CityAttack" : [] };
+	// debug("HQ()");
 };
 
 // More initialisation for stuff that needs the gameState
 HQ.prototype.init = function(gameState, events, queues){
+	// debug("HQ.init()");
 	// initialize base map. Each pixel is a base ID, or 0 if none
 	this.basesMap = new Map(gameState.sharedScript, new Uint8Array(gameState.getMap().data.length));
 	this.basesMap.setMaxVal(255);
@@ -174,6 +176,7 @@ HQ.prototype.init = function(gameState, events, queues){
 };
 
 HQ.prototype.checkEvents = function (gameState, events, queues) {
+	// debug("HQ.checkEvents()");
 	for (i in events)
 	{
 		if (events[i].type == "Destroy")
@@ -236,6 +239,7 @@ HQ.prototype.checkEvents = function (gameState, events, queues) {
 //		(or even to adapt based on estimated enemy strategy).
 // TODO: this should probably set which base it wants them in.
 HQ.prototype.trainMoreWorkers = function(gameState, queues) {
+	// debug("HQ.trainMoreWorkers()");
 	// Count the workers in the world and in progress
 	var numFemales = gameState.countEntitiesAndQueuedByType(gameState.applyCiv("units/{civ}_support_female_citizen"));
 	numFemales += queues.villager.countQueuedUnitsWithClass("Support");
@@ -293,6 +297,7 @@ HQ.prototype.trainMoreWorkers = function(gameState, queues) {
 
 // picks the best template based on parameters and classes
 HQ.prototype.findBestTrainableUnit = function(gameState, classes, parameters) {
+	// debug("HQ.findBestTrainableUnit()");
 	var units = gameState.findTrainableUnits(classes);
 	
 	if (units.length === 0)
@@ -336,6 +341,7 @@ HQ.prototype.findBestTrainableUnit = function(gameState, classes, parameters) {
 
 // picks the best template based on parameters and classes
 HQ.prototype.findBestTrainableSoldier = function(gameState, classes, parameters) {
+	// debug("HQ.findBestTrainableSoldier()");
 	var units = gameState.findTrainableUnits(classes);
 	
 	if (units.length === 0)
@@ -387,6 +393,7 @@ HQ.prototype.findBestTrainableSoldier = function(gameState, classes, parameters)
 // Only one at once. Also does military tech (selection is completely random atm)
 // TODO: Lots, lots, lots here.
 HQ.prototype.tryResearchTechs = function(gameState, queues) {
+	// debug("HQ.tryResearchTechs()");
 	if (queues.minorTech.length() === 0)
 	{
 		var possibilities = gameState.findAvailableTech();
@@ -402,6 +409,7 @@ HQ.prototype.tryResearchTechs = function(gameState, queues) {
 // We'll assign the worker for the best base for that resource type.
 // TODO: improve choice alogrithm
 HQ.prototype.switchWorkerBase = function(gameState, worker, type) {
+	// debug("HQ.switchWorkerBase()");
 	var bestBase = 0;
 	for (var i in this.baseManagers)
 	{
@@ -428,6 +436,7 @@ HQ.prototype.switchWorkerBase = function(gameState, worker, type) {
 // TODO: better the choice algo.
 // TODO: also can't get over multiple bases right now.
 HQ.prototype.bulkPickWorkers = function(gameState, newBaseID, number) {
+	// debug("HQ.bulkPickWorkers()");
 	var accessIndex = this.baseManagers[newBaseID].accessIndex;
 	if (!accessIndex)
 		return false;
@@ -452,6 +461,7 @@ HQ.prototype.bulkPickWorkers = function(gameState, newBaseID, number) {
 // returns the current gather rate
 // This is not per-se exact, it performs a few adjustments ad-hoc to account for travel distance, stuffs like that.
 HQ.prototype.GetCurrentGatherRates = function(gameState) {
+	// debug("HQ.GetCurrentGatherRates()");
 	var self = this;
 
 	var currentRates = {};
@@ -467,6 +477,7 @@ HQ.prototype.GetCurrentGatherRates = function(gameState) {
 
 // Pick the resource which most needs another worker
 HQ.prototype.pickMostNeededResources = function(gameState) {
+	// debug("HQ.pickMostNeededResources()");
 	var self = this;
 	
 	this.wantedRates = gameState.ai.queueManager.wantedGatherRates(gameState);
@@ -510,6 +521,7 @@ HQ.prototype.pickMostNeededResources = function(gameState) {
 // If all the CC's are destroyed then build a new one
 // TODO: rehabilitate.
 HQ.prototype.buildNewCC= function(gameState, queues) {
+	// debug("HQ.buildNewCC()");
 	var numCCs = gameState.countEntitiesAndQueuedByType(gameState.applyCiv("structures/{civ}_civil_centre"));
 	numCCs += queues.civilCentre.length();
 
@@ -529,6 +541,7 @@ HQ.prototype.buildNewCC= function(gameState, queues) {
 // Returns the best position to build a new Civil Centre
 // Whose primary function would be to reach new resources of type "resource".
 HQ.prototype.findBestEcoCCLocation = function(gameState, resource){
+	// debug("HQ.findBestEcoCCLocation()");
 	
 	var CCPlate = gameState.getTemplate("structures/{civ}_civil_centre");
 
@@ -645,6 +658,7 @@ HQ.prototype.findBestEcoCCLocation = function(gameState, resource){
 };
 
 HQ.prototype.buildTemple = function(gameState, queues){
+	// debug("HQ.buildTemple()");
 	if (gameState.currentPhase() >= 2 ) {
 		if (queues.economicBuilding.countQueuedUnits() === 0 &&
 			gameState.countEntitiesAndQueuedByType(gameState.applyCiv("structures/{civ}_temple")) === 0){
@@ -654,6 +668,7 @@ HQ.prototype.buildTemple = function(gameState, queues){
 };
 
 HQ.prototype.buildMarket = function(gameState, queues){
+	// debug("HQ.buildMarket()");
 	if (gameState.getPopulation() > Config.Economy.popForMarket && gameState.currentPhase() >= 2 ) {
 		if (queues.economicBuilding.countQueuedUnitsWithClass("BarterMarket") === 0 &&
 			gameState.countEntitiesAndQueuedByType(gameState.applyCiv("structures/{civ}_market")) === 0){
@@ -665,6 +680,7 @@ HQ.prototype.buildMarket = function(gameState, queues){
 
 // Build a farmstead to go to town phase faster and prepare for research. Only really active on higher diff mode.
 HQ.prototype.buildFarmstead = function(gameState, queues){
+	// debug("HQ.buildFarmstead()");
 	if (gameState.getPopulation() > Config.Economy.popForFarmstead) {
 		if (queues.economicBuilding.countQueuedUnitsWithClass("DropsiteFood") === 0 &&
 			gameState.countEntitiesAndQueuedByType(gameState.applyCiv("structures/{civ}_farmstead")) === 0){
@@ -676,6 +692,7 @@ HQ.prototype.buildFarmstead = function(gameState, queues){
 
 // TODO: generic this, probably per-base
 HQ.prototype.buildDock = function(gameState, queues){
+	// debug("HQ.buildDock()");
 	if (!this.waterMap || this.dockFailed)
 		return;
 	if (gameState.getTimeElapsed() > this.dockStartTime) {
@@ -699,6 +716,7 @@ HQ.prototype.buildDock = function(gameState, queues){
 // once per turn because the info doesn't update between a turn and I don't want to fix it.
 // Not sure how efficient it is but it seems to be sane, at least.
 HQ.prototype.tryBartering = function(gameState){
+	// debug("HQ.tryBartering()");
 	var done = false;
 	if (gameState.countEntitiesByType(gameState.applyCiv("structures/{civ}_market"), true) >= 1) {
 		
@@ -723,6 +741,7 @@ HQ.prototype.tryBartering = function(gameState){
 // build more houses if needed.
 // kinda ugly, lots of special cases to both build enough houses but not tooo many…
 HQ.prototype.buildMoreHouses = function(gameState,queues) {
+	// debug("HQ.buildMoreHouses()");
 
 	if (gameState.getPopulationLimit() < gameState.getPopulationMax()) {
 
@@ -754,6 +773,7 @@ HQ.prototype.buildMoreHouses = function(gameState,queues) {
 
 // checks if we have bases for all resource types (bar food for now) or if we need to expand.
 HQ.prototype.checkBasesRessLevel = function(gameState,queues) {
+	// debug("HQ.checkBasesRessLevel()");
 	if (gameState.currentPhase() === 1 && !gameState.isResearching(gameState.townPhase()))
 		return;
 	var count = { "wood" : 0, "stone" : 0, "metal" : 0 }
@@ -799,6 +819,7 @@ HQ.prototype.checkBasesRessLevel = function(gameState,queues) {
 // Currently build towers next to every useful dropsites.
 // TODO: Fortresses are placed randomly atm.
 HQ.prototype.buildDefences = function(gameState, queues){
+	// debug("HQ.buildDefences()");
 	
 	var workersNumber = gameState.getOwnEntitiesByRole("worker").filter(Filters.not(Filters.byHasMetadata(PlayerID,"plan"))).length;
 	
@@ -857,6 +878,7 @@ HQ.prototype.buildDefences = function(gameState, queues){
 };
 
 HQ.prototype.buildBlacksmith = function(gameState, queues){
+	// debug("HQ.buildBlacksmith()");
 	if (gameState.getTimeElapsed() > Config.Military.timeForBlacksmith*1000) {
 		if (queues.militaryBuilding.length() === 0 &&
 			gameState.countEntitiesAndQueuedByType(gameState.applyCiv("structures/{civ}_blacksmith")) === 0) {
@@ -872,6 +894,7 @@ HQ.prototype.buildBlacksmith = function(gameState, queues){
 // TODO: We need to determine these dynamically. Also doesn't build fortresses since the above function does that.
 // TODO: building placement is bad. Choice of buildings is also fairly dumb.
 HQ.prototype.constructTrainingBuildings = function(gameState, queues) {
+	// debug("HQ.constructTrainingBuildings()");
 	Engine.ProfileStart("Build buildings");
 	var workersNumber = gameState.getOwnEntitiesByRole("worker").filter(Filters.not(Filters.byHasMetadata(PlayerID, "plan"))).length;
 
@@ -929,6 +952,7 @@ HQ.prototype.constructTrainingBuildings = function(gameState, queues) {
 
 // TODO: use pop(). Currently unused as this is too gameable.
 HQ.prototype.garrisonAllFemales = function(gameState) {
+	// debug("HQ.garrisonAllFemales()");
 	var buildings = gameState.getOwnEntities().filter(Filters.byCanGarrison()).toEntityArray();
 	var females = gameState.getOwnEntities().filter(Filters.byClass("Support"));
 	
@@ -954,6 +978,7 @@ HQ.prototype.garrisonAllFemales = function(gameState) {
 	this.hasGarrisonedFemales = true;
 };
 HQ.prototype.ungarrisonAll = function(gameState) {
+	// debug("HQ.ungarrisonAll()");
 	this.hasGarrisonedFemales = false;
 	var buildings = gameState.getOwnEntities().filter(Filters.and(Filters.byClass("Structure"),Filters.byCanGarrison())).toEntityArray();
 	buildings.forEach( function (struct) {
@@ -963,6 +988,7 @@ HQ.prototype.ungarrisonAll = function(gameState) {
 };
 
 HQ.prototype.pausePlan = function(gameState, planName) {
+	// debug("HQ.pausePlan()");
 	for (var attackType in this.upcomingAttacks) {
 		for (var i in this.upcomingAttacks[attackType]) {
 			var attack = this.upcomingAttacks[attackType][i];
@@ -979,6 +1005,7 @@ HQ.prototype.pausePlan = function(gameState, planName) {
 	}
 }
 HQ.prototype.unpausePlan = function(gameState, planName) {
+	// debug("HQ.unpausePlan()");
 	for (var attackType in this.upcomingAttacks) {
 		for (var i in this.upcomingAttacks[attackType]) {
 			var attack = this.upcomingAttacks[attackType][i];
@@ -995,6 +1022,7 @@ HQ.prototype.unpausePlan = function(gameState, planName) {
 	}
 }
 HQ.prototype.pauseAllPlans = function(gameState) {
+	// debug("HQ.pauseAllPlans()");
 	for (var attackType in this.upcomingAttacks) {
 		for (var i in this.upcomingAttacks[attackType]) {
 			var attack = this.upcomingAttacks[attackType][i];
@@ -1009,6 +1037,7 @@ HQ.prototype.pauseAllPlans = function(gameState) {
 	}
 }
 HQ.prototype.unpauseAllPlans = function(gameState) {
+	// debug("HQ.unpauseAllPlans()");
 	for (var attackType in this.upcomingAttacks) {
 		for (var i in this.upcomingAttacks[attackType]) {
 			var attack = this.upcomingAttacks[attackType][i];
@@ -1027,6 +1056,8 @@ HQ.prototype.unpauseAllPlans = function(gameState) {
 // Some functions are run every turn
 // Others once in a while
 HQ.prototype.update = function(gameState, queues, events) {
+	// debug("\n\n\n");
+	// debug("HQ.update()");
 	Engine.ProfileStart("Headquarters update");
 	
 	this.checkEvents(gameState,events,queues);

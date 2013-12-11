@@ -1234,7 +1234,7 @@ CityAttack.prototype.Abort = function(gameState){
 		delete this.unitStat[unitCat];
 		delete this.unit[unitCat];
 	}
-	delete this.unitCollection;
+	// delete this.unitCollection;
 	gameState.ai.queueManager.removeQueue("plan_" + this.name);
 	gameState.ai.queueManager.removeQueue("plan_" + this.name + "_champ");
 };

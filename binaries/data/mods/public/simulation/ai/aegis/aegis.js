@@ -30,6 +30,8 @@ function AegisBot(settings) {
 	
 	this.defcon = 5;
 	this.defconChangeTime = -10000000;
+
+	this.info = new Info();
 }
 
 AegisBot.prototype = new BaseAI();
@@ -160,6 +162,8 @@ AegisBot.prototype.OnUpdate = function(sharedScript) {
 		this.HQ.update(this.gameState, this.queues, this.savedEvents);
 
 		this.queueManager.update(this.gameState);
+
+		this.info.update(this.gameState);
 
 		/*
 		 // Use this to debug informations about the metadata.

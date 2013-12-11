@@ -73,7 +73,7 @@ var baseConfig = {
 };
 
 var Config = {
-	"debug": false,
+	"debug": true,
 	"difficulty" : 2,	// overriden by the GUI
 	updateDifficulty: function(difficulty)
 	{
